@@ -242,26 +242,186 @@ node_t *rbmin(const rbtree *t, node_t* nodett) {
   }
   return temp;
 }
-
-node_t *rbtree_min(const rbtree *t) {
-  // TODO: implement find
-  // 임시 코드
-//   node_t* nownode = t-> root;
-//   while(nownode != t -> nil){
-//     int minkey = nownode -> key;
-//     nownode = nownode->left;
-//   }
-  return t->root;//왜반환하는것이지?
-  // 최댓값 은 맨 오른쪽으로
+/////////////////////////////////////////////////////////
+node_t *rbtree_min(const rbtree *tree) {
+    node_t* minnode = tree->root;
+    while(minnode->left != tree->nil){
+        minnode = minnode->left;
+    }
+    return minnode;
 }
 
-node_t *rbtree_max(const rbtree *t) {
-  // TODO: implement find
-  return t->root;
+node_t *rbtree_max(const rbtree *tree) {
+    node_t* maxnode = tree->root;
+    while(maxnode->right != tree->nil){
+        maxnode = maxnode->right;
+    }
+    return maxnode;
+}
+/////////////////////////////////////////////////////////////
+node_t *rbmax(const rbtree *tree, node_t* nodett) {
+    node_t* maxnode = nodett;
+    // while(maxnode != tree->nil) 이런식으로 진행하면 임시 변수를 하나 더 설정해야한다.(rbmin)
+    // 아래와 같이 진행하는게 더 좋아보인다. // 확인 후 이동
+    while(maxnode->right != tree->nil){
+        maxnode = maxnode->right;
+    }
+    return maxnode;
 }
 
-int rbtree_erase(rbtree *t, node_t *p) {
-  // TODO: implement erase
+void changep(rbtree* tree, node_t* oldnode, node_t* newnode){
+    // 바꿀 노드가 루트노드 라면
+    if (oldnode->parent == tree->nil){
+        tree->root = newnode;
+
+    }else if (oldnode == oldnode->parent->left){
+        oldnode->parent->left = newnode;
+    
+    }else{
+        oldnode->parent->right = newnode;
+    
+    }
+    newnode->parent = oldnode ->parent;
+}
+
+void delfixed(rbtree* tree, node_t *delchil)
+{
+    node_t* fixnode = delchil;
+    node_t* othernode;
+
+    // delchil 노드가 루트, 색깔이 검정> while문 끝
+    while(fixnode != tree->root && fixnode->color == 1)
+    {   // fixnode이 왼쪽일때
+        if(fixnode == delchil->parent->left){
+            othernode = fixnode->parent->right;
+            // 1. othernode 가 빨간색 > 2,3,4 가능
+            if (othernode->color == 0){
+                // 색깔 변경
+                othernode -> parent -> color = 0;
+                othernode -> color = 1;
+                // othernode-p 왼쪽 회전
+                Lrot(tree, othernode->parent);
+                // othernode는 변경후 fixnode->p의 오른쪽 자식 갱신
+                othernode = fixnode->parent->right;
+            }
+            // 1에서 othernode의 색 변경 따라서 바로 진행
+            // 2 othernode 모든 자식이 검은색  > 1, 3, 4 가능
+            if (othernode->left->color == 1 && othernode->right->color == 1){
+                // othernode의 색변경
+                othernode->color = 0;
+                // fixnode 갱신
+                fixnode = othernode->parent;
+
+            }else{ // othernode 가 검은색
+            // 3 othernode 왼쪽 자식이 빨간색 > 4 가능
+                if(othernode->left->color == 0)
+                {// 색깔 변경
+                    othernode->left->color = 1;
+                    othernode->color = 0;
+                    // 오른쪽으로 회전
+                    Rrot(tree, othernode);
+                    // othernode 갱신
+                    othernode = fixnode->parent->right;
+                }
+                // 4 othernode 오른쪽 자식이 빨간색 > 종료 가능//
+                othernode->color = othernode->parent->color;
+                othernode->parent->color = 1;
+                othernode->right->color = 1;
+                Lrot(tree, othernode->parent);
+
+                // 여기 까지 오게 된다면 모든 문제점들이 해결된거나 마찬가지
+                // while 문을 끝내주기 위한 조건일뿐 자료구조 자체는 변경점이 없다. 
+                fixnode = tree->root;
+            }
+        } else{// 좌우 반전
+            othernode = fixnode->parent->left;
+            if (othernode->color == 0){
+                othernode->parent->color = 0;
+                othernode->color = 1;
+                Rrot(tree, fixnode->parent);
+                othernode = fixnode->parent->left;
+            }
+
+            if (othernode->left->color == 1 && othernode->right->color == 1){
+                othernode->color = 0;
+                fixnode = fixnode->parent;
+
+            }else{
+                if (othernode->right->color == 0){
+                    othernode->parent->color = 0;
+                    othernode->right->color = 1;
+                    Lrot(tree, othernode);
+                    othernode = fixnode->parent->left;
+                }
+                othernode->color = othernode->parent->color;
+                othernode->parent->color = 1;
+                othernode->left->color = 1;
+                Rrot(tree,othernode->parent);
+                fixnode = tree->root;
+            }
+        }
+            
+    }
+    fixnode->color = 1;
+}
+
+
+
+
+
+int rbtree_erase(rbtree *tree, node_t *delnode) {
+  
+    // 삭제할 노드, 색깔 저장
+    node_t* delchil;
+    node_t* deling = delnode; 
+    color_t delcolor = delnode->color;
+    // 삭제 노드가 빨간색일때
+    // 자식이 왼쪽 하나 or 자식이 없을때
+    if (delnode->right == tree->nil){
+        // 삭제할 노드의 왼쪽자식의 주소 저장
+        // 노드삭제후 트리구조변경시 사용 
+        delchil = deling->left;
+        // 삭제할 노드와 왼쪽 자식노드를 바꿔준다.
+        changep(tree, deling, deling->left);
+    
+    }else if (delnode->left == tree->nil){
+        // 자식이 오른쪽 하나(좌우 반대)
+        delchil = deling->right;
+        changep(tree, deling, deling->right);
+    
+    }else{ // 두개의 자식 존재
+        // 삭제 하고자 하는 노드의 왼쪽을 기준으로> 왼쪽 노드를 시작으로 가장 작은 값을 사용
+        //                 노드의 오른쪽을 기준 > 오른쪽 노드를 시작으로 가장 큰 값을 사용
+        // 두 방식 모두 적용가능
+
+        // 삭제할 노드, 색깔 저장
+        deling  = rbmax(tree, delnode->left);
+        delcolor = deling->color;
+        delchil = deling->left;
+
+        // 만약 삭제 노드의 오른쪽 값이 아닐경우, 즉 더 아래에 있을 경우.
+        if(deling != delnode->right){
+            // deling의 자식을 deling의 부모노드와 연결
+            changep(tree, deling, deling->left);
+            deling->left = delnode->left;
+            deling->left->parent = deling;
+        }else{
+            delchil->parent = deling;
+        }
+        // 삭제할 노드의 부모를 deling의 부모로 변경
+        changep(tree, delnode, deling);
+        // delnode의 오른쪽 자식을 deling과 연결
+        deling->right = delnode->right;
+        deling->right->parent = deling;
+        // 삭제 노드의 색 정보를 deling으로 전달
+        deling->color = delnode->color;
+    }
+    // delnode 삭제
+    free(delnode);
+
+    if (delcolor == 1){
+        delfixed(tree, delchil);
+    }
   return 0;
 }
 
