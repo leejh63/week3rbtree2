@@ -130,9 +130,9 @@ rbtree *new_rbtree(void) {
   // 3. sentinel 노드초기화
   nilnode->color = 1;
   nilnode->key = -1;
-  nilnode->parent = NULL;
-  nilnode->left = NULL;
-  nilnode->right = NULL;
+  nilnode->parent = tree->nil;
+  nilnode->left = tree->nil;
+  nilnode->right = tree->nil;
 
   // 4. 닐노드 포인터 지정
   tree->nil = nilnode;
@@ -322,7 +322,7 @@ void delfixed(rbtree* tree, node_t *delchil)
                     Rrot(tree, othernode);
                     // othernode 갱신
                     othernode = fixnode->parent->right;
-                }
+                }else{
                 // 4 othernode 오른쪽 자식이 빨간색 > 종료 가능//
                 othernode->color = othernode->parent->color;
                 othernode->parent->color = 1;
@@ -332,6 +332,7 @@ void delfixed(rbtree* tree, node_t *delchil)
                 // 여기 까지 오게 된다면 모든 문제점들이 해결된거나 마찬가지
                 // while 문을 끝내주기 위한 조건일뿐 자료구조 자체는 변경점이 없다. 
                 fixnode = tree->root;
+                }
             }
         } else{// 좌우 반전
             othernode = fixnode->parent->left;
@@ -352,12 +353,13 @@ void delfixed(rbtree* tree, node_t *delchil)
                     othernode->right->color = 1;
                     Lrot(tree, othernode);
                     othernode = fixnode->parent->left;
-                }
+                }else{
                 othernode->color = othernode->parent->color;
                 othernode->parent->color = 1;
                 othernode->left->color = 1;
                 Rrot(tree,othernode->parent);
                 fixnode = tree->root;
+                }
             }
         }
             
@@ -370,7 +372,9 @@ void delfixed(rbtree* tree, node_t *delchil)
 
 
 int rbtree_erase(rbtree *tree, node_t *delnode) {
-  
+    if (delnode == NULL){
+        return 0;
+    }
     // 삭제할 노드, 색깔 저장
     node_t* delchil;
     node_t* deling = delnode; 
@@ -400,7 +404,7 @@ int rbtree_erase(rbtree *tree, node_t *delnode) {
         delchil = deling->left;
 
         // 만약 삭제 노드의 오른쪽 값이 아닐경우, 즉 더 아래에 있을 경우.
-        if(deling != delnode->right){
+        if(deling != delnode->left){
             // deling의 자식을 deling의 부모노드와 연결
             changep(tree, deling, deling->left);
             deling->left = delnode->left;
@@ -426,6 +430,6 @@ int rbtree_erase(rbtree *tree, node_t *delnode) {
 }
 
 int rbtree_to_array(const rbtree *t, key_t *arr, const size_t n) {
-  // TODO: implement to_array
+  
   return 0;
 }
