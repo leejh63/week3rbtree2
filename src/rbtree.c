@@ -232,6 +232,16 @@ node_t *rbtree_find(const rbtree *tree, const key_t findkey)
     return nownode;
 }
 
+node_t *rbmin(const rbtree *t, node_t* nodett) {
+//   node_t* nownode = t-> root;
+  node_t* nownode = nodett;
+  node_t* temp;
+  while(nownode != t -> nil){
+    temp = nownode;
+    nownode = nownode->left;
+  }
+  return temp;
+}
 
 node_t *rbtree_min(const rbtree *t) {
   // TODO: implement find
